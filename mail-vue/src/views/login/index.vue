@@ -41,6 +41,9 @@
           </el-input>
           <el-input v-model="form.password" :placeholder="$t('password')" type="password" autocomplete="off" @keyup.enter="submit">
           </el-input>
+          <LoginTurnstile v-if="settingStore.settings.loginVerifyOpen"
+                          ref="loginChallenge" :site-key="settingStore.settings.siteKey"
+                          v-model:token="loginVerifyToken" />
           <el-button class="btn" type="primary" @click="submit" :loading="loginLoading"
           >{{ $t('loginBtn') }}
           </el-button>
@@ -171,6 +174,7 @@ import {permsToRouter} from "@/perm/perm.js";
 import {useI18n} from "vue-i18n";
 import {oauthBindUser, oauthLinuxDoLogin, oauthGithubLogin, oauthGoogleLogin} from "@/request/ouath.js";
 import {reloadTurnstileScript} from "@/utils/turnstile-script.js";
+import LoginTurnstile from "@/components/LoginTurnstile.vue";
 
 const {t} = useI18n();
 const accountStore = useAccountStore();
@@ -179,6 +183,8 @@ const uiStore = useUiStore();
 const settingStore = useSettingStore();
 const route = useRoute();
 const loginLoading = ref(false)
+const loginChallenge = ref(null)
+const loginVerifyToken = ref('')
 const bindLoading = ref(false)
 const oauthLoading = ref(false);
 const showBindForm = ref(false);
@@ -456,9 +462,16 @@ const submit = () => {
     return
   }
 
+  if (settingStore.settings.loginVerifyOpen && !loginVerifyToken.value) {
+    ElMessage.error('请先完成人机验证')
+    return
+  }
+
   loginLoading.value = true
-  login(email, form.password).then(async data => {
+  login(email, form.password, loginVerifyToken.value).then(async data => {
     await saveToken(data.token)
+  }).catch(() => {
+    loginChallenge.value?.reset()
   }).finally(() => {
     loginLoading.value = false
   })

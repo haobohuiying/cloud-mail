@@ -4,7 +4,7 @@ import { t } from '../i18n/i18n'
 
 const turnstileService = {
 
-	async verify(c, token) {
+	async verify(c, token, expectedAction) {
 
 		if (!token) {
 			throw new BizError(t('emptyBotToken'),400);
@@ -26,7 +26,8 @@ const turnstileService = {
 
 		const result = await res.json();
 
-		if (!result.success) {
+		if (!result.success || (expectedAction &&
+			(result.action !== expectedAction || result.hostname !== new URL(c.req.url).hostname))) {
 			throw new BizError(t('botVerifyFail'),400)
 		}
 	}
