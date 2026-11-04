@@ -225,10 +225,6 @@ const loginService = {
 
 		const { email, password } = params;
 
-		if (!noVerifyPwd && c.env.login_turnstile === true) {
-			await turnstileService.verify(c, params.token, 'login');
-		}
-
 		if ((!email || !password) && !noVerifyPwd) {
 			throw new BizError(t('emailAndPwdEmpty'));
 		}
