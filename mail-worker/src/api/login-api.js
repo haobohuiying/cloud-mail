@@ -3,7 +3,7 @@ import loginService from '../service/login-service';
 import result from '../model/result';
 import userContext from '../security/user-context';
 
-app.post('/login', async (c) => {
+const limitPasswordAttempts = async (c, next) => {
 	const params = await c.req.json();
 	if (c.env.LOGIN_RATE_LIMIT) {
 		const keys = [
@@ -18,7 +18,14 @@ app.post('/login', async (c) => {
 			}
 		}
 	}
-	const token = await loginService.login(c, params);
+	return next();
+};
+
+app.use('/login', limitPasswordAttempts);
+app.use('/public/genToken', limitPasswordAttempts);
+
+app.post('/login', async (c) => {
+	const token = await loginService.login(c, await c.req.json());
 	return c.json(result.ok({ token: token }));
 });
 

@@ -7,7 +7,7 @@ import './login-api';
 
 describe('login request limits', () => {
   beforeEach(() => vi.clearAllMocks());
-  const request = (limit) => app.request('/login', {
+  const request = (limit, path = '/login') => app.request(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '192.0.2.1' },
     body: JSON.stringify({ email: 'Admin@Example.com', password: 'test' })
@@ -28,5 +28,11 @@ describe('login request limits', () => {
     expect(response.headers.get('Retry-After')).toBe('60');
     expect((await response.json()).code).toBe(429);
     expect(loginService.login).not.toHaveBeenCalled();
+  });
+
+  it('also blocks the administrator API token password endpoint', async () => {
+    const response = await request(vi.fn(async () => ({ success: false })), '/public/genToken');
+    expect(response.status).toBe(429);
+    expect(response.headers.get('Retry-After')).toBe('60');
   });
 });
